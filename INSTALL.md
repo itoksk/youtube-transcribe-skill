@@ -1,0 +1,101 @@
+# インストールガイド
+
+## 動作環境
+
+- **macOS (Apple Silicon)** 専用
+  - `mlx-whisper` が Apple の MLX フレームワークに依存するため
+  - Intel Mac / Linux / Windows では動作しません
+
+## ワンライナーインストール（推奨）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/itoksk/youtube-transcribe-skill/main/install.sh | INSTALL_FROM_REMOTE=1 bash
+```
+
+このコマンドは:
+
+1. 依存ツール（Homebrew / yt-dlp / ffmpeg / pipx / mlx-whisper）を確認
+2. 不足があれば、確認の上で自動インストール
+3. リポジトリを `~/.local/share/youtube-transcribe-skill/` にクローン
+4. `~/.claude/skills/youtube-transcribe/` にシンボリックリンクを作成
+
+インストール後は **新しいターミナルを開いてから** Claude Code を起動してください（`pipx ensurepath` で `~/.local/bin` が PATH に追加されるため）。
+
+## 手動インストール
+
+### 1. 依存ツールを順にインストール
+
+```bash
+# Homebrew が未導入なら
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 必須パッケージ
+brew install yt-dlp ffmpeg pipx
+pipx ensurepath
+
+# 新しいシェルを開き直してから:
+pipx install mlx-whisper
+```
+
+### 2. リポジトリをクローン
+
+任意の場所に置いて構いません。
+
+```bash
+git clone https://github.com/itoksk/youtube-transcribe-skill.git ~/git/youtube-transcribe-skill
+cd ~/git/youtube-transcribe-skill
+```
+
+### 3. インストーラを実行
+
+```bash
+bash install.sh
+```
+
+これで `~/.claude/skills/youtube-transcribe/` にシンボリックリンクが作成されます。
+リポジトリ側を `git pull` すれば即時反映されます。
+
+## アンインストール
+
+```bash
+rm ~/.claude/skills/youtube-transcribe
+rm -rf ~/.local/share/youtube-transcribe-skill   # ワンライナー版を使った場合
+```
+
+依存ツールを巻き取りたい場合は別途:
+
+```bash
+brew uninstall yt-dlp ffmpeg
+pipx uninstall mlx-whisper
+```
+
+## 動作確認
+
+```bash
+# 依存チェック
+bash ~/.claude/skills/youtube-transcribe/scripts/check_deps.sh
+
+# 試しに何か短い動画で実行
+bash ~/.claude/skills/youtube-transcribe/scripts/transcribe.sh \
+  "https://www.youtube.com/watch?v=dQw4w9WgXcQ" \
+  --out-dir /tmp/yt-test
+ls -la /tmp/yt-test/
+```
+
+## トラブルシューティング
+
+### `mlx_whisper: command not found`
+
+→ `pipx ensurepath` 実行後、新しいシェルを開く。または `~/.local/bin` を `PATH` に追加。
+
+### `xcrun: error: invalid active developer path`
+
+→ `xcode-select --install` で Command Line Tools をインストール。
+
+### `yt-dlp` がエラーになる（古いバージョン）
+
+→ `brew upgrade yt-dlp` で最新版に更新。
+
+### モデルのダウンロードが遅い
+
+→ 初回のみ数 GB ダウンロードする。Hugging Face のキャッシュ（`~/.cache/huggingface/`）に保存され、2回目以降はスキップされる。
