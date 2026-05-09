@@ -20,23 +20,47 @@ warn()  { echo -e "${YELLOW}[WARN]${NC} $1" >&2; }
 err()   { echo -e "${RED}[ERR]${NC} $1" >&2; }
 info()  { echo -e "${BLUE}[INFO]${NC} $1"; }
 
-REPO_URL="https://github.com/itoksk/youtube-transcribe-skill.git"
+REPO_OWNER="itoksk"
+REPO_NAME="youtube-transcribe-skill"
+REPO_BRANCH="main"
+REPO_GIT_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
+REPO_TAR_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/refs/heads/${REPO_BRANCH}.tar.gz"
 SKILL_NAME="youtube-transcribe"
 TARGET_DIR="$HOME/.claude/skills"
+CLONE_DEST="$HOME/.local/share/${REPO_NAME}"
+
+have() { command -v "$1" >/dev/null 2>&1; }
 
 # ----- リポジトリの位置を解決 -----
 if [[ "${INSTALL_FROM_REMOTE:-0}" == "1" ]]; then
   TMP_DIR="$(mktemp -d)"
-  info "リモートからクローン: $REPO_URL"
-  git clone --depth=1 "$REPO_URL" "$TMP_DIR/youtube-transcribe-skill"
-  REPO_DIR="$TMP_DIR/youtube-transcribe-skill"
-  CLONE_DEST="$HOME/.local/share/youtube-transcribe-skill"
+  trap 'rm -rf "$TMP_DIR"' EXIT
+
+  if have git; then
+    info "git clone でソースを取得: $REPO_GIT_URL"
+    git clone --depth=1 --branch "$REPO_BRANCH" "$REPO_GIT_URL" "$TMP_DIR/$REPO_NAME"
+  elif have curl && have tar; then
+    info "git が無いので tarball でソースを取得: $REPO_TAR_URL"
+    curl -fsSL "$REPO_TAR_URL" | tar -xz -C "$TMP_DIR"
+    # GitHub の tarball は `<repo>-<branch>` で展開される
+    if [[ -d "$TMP_DIR/${REPO_NAME}-${REPO_BRANCH}" ]]; then
+      mv "$TMP_DIR/${REPO_NAME}-${REPO_BRANCH}" "$TMP_DIR/$REPO_NAME"
+    else
+      err "tarball の展開に失敗しました。"; exit 1
+    fi
+  else
+    err "git も curl+tar も使えません。最低でも curl と tar を用意してください。"
+    exit 1
+  fi
+
   if [[ -d "$CLONE_DEST" ]]; then
-    info "既存の $CLONE_DEST を更新します"
-    rm -rf "$CLONE_DEST"
+    info "既存の $CLONE_DEST を退避して置き換えます"
+    BACKUP="${CLONE_DEST}.bak.$(date +%Y%m%d%H%M%S)"
+    mv "$CLONE_DEST" "$BACKUP"
+    warn "Backed up: $CLONE_DEST → $BACKUP"
   fi
   mkdir -p "$(dirname "$CLONE_DEST")"
-  mv "$REPO_DIR" "$CLONE_DEST"
+  mv "$TMP_DIR/$REPO_NAME" "$CLONE_DEST"
   REPO_DIR="$CLONE_DEST"
 else
   REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -84,4 +108,9 @@ info "または直接スクリプトを叩く:"
 echo "  bash $SKILL_SRC/scripts/transcribe.sh <YouTube URL>"
 echo ""
 info "更新方法:"
-echo "  cd $REPO_DIR && git pull   # symlink なので即時反映"
+if [[ -d "$REPO_DIR/.git" ]]; then
+  echo "  cd $REPO_DIR && git pull   # symlink なので即時反映"
+else
+  echo "  curl -fsSL https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/install.sh | INSTALL_FROM_REMOTE=1 bash"
+  echo "  # ↑ tarball で取得した場合はワンライナーを再実行"
+fi

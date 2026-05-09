@@ -11,7 +11,7 @@ YouTube 動画の URL を渡すだけで、ローカルで完結する文字起�
 
 ---
 
-## ワンライナーインストール
+## ワンライナーインストール（git 不要）
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/itoksk/youtube-transcribe-skill/main/install.sh | INSTALL_FROM_REMOTE=1 bash
@@ -20,12 +20,16 @@ curl -fsSL https://raw.githubusercontent.com/itoksk/youtube-transcribe-skill/mai
 これで以下が完了します:
 
 1. 依存ツール（`yt-dlp` / `ffmpeg` / `pipx` / `mlx-whisper`）の確認・自動インストール（許可制）
-2. リポジトリを `~/.local/share/youtube-transcribe-skill/` にクローン
+2. ソースを `~/.local/share/youtube-transcribe-skill/` に配置
+   - `git` があれば `git clone` で取得（後で `git pull` 更新可）
+   - `git` が無ければ GitHub の **tarball を curl + tar で取得**（git アカウントすら不要）
 3. `~/.claude/skills/youtube-transcribe/` にシンボリックリンクで配置
+
+> **必要なもの**: `curl` と `tar`（macOS には標準搭載）。GitHub アカウントも `git` も不要です。
 
 ---
 
-## ローカルクローン経由でインストール
+## ローカルクローン経由でインストール（git がある人向け）
 
 ```bash
 git clone https://github.com/itoksk/youtube-transcribe-skill.git

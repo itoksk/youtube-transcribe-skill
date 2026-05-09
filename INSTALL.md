@@ -6,7 +6,7 @@
   - `mlx-whisper` が Apple の MLX フレームワークに依存するため
   - Intel Mac / Linux / Windows では動作しません
 
-## ワンライナーインストール（推奨）
+## ワンライナーインストール（推奨 / git 不要）
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/itoksk/youtube-transcribe-skill/main/install.sh | INSTALL_FROM_REMOTE=1 bash
@@ -16,8 +16,12 @@ curl -fsSL https://raw.githubusercontent.com/itoksk/youtube-transcribe-skill/mai
 
 1. 依存ツール（Homebrew / yt-dlp / ffmpeg / pipx / mlx-whisper）を確認
 2. 不足があれば、確認の上で自動インストール
-3. リポジトリを `~/.local/share/youtube-transcribe-skill/` にクローン
+3. ソースを `~/.local/share/youtube-transcribe-skill/` に配置
+   - `git` がある: `git clone --depth=1` で取得（`cd ... && git pull` で更新可）
+   - `git` が無い: GitHub の **tarball を curl + tar で展開**（GitHub アカウント不要）
 4. `~/.claude/skills/youtube-transcribe/` にシンボリックリンクを作成
+
+> **最低条件**: `curl` と `tar`（macOS 標準搭載）。`git` も GitHub アカウントも不要です。
 
 インストール後は **新しいターミナルを開いてから** Claude Code を起動してください（`pipx ensurepath` で `~/.local/bin` が PATH に追加されるため）。
 
@@ -37,13 +41,21 @@ pipx ensurepath
 pipx install mlx-whisper
 ```
 
-### 2. リポジトリをクローン
-
-任意の場所に置いて構いません。
+### 2-A. ソースを取得（git がある場合）
 
 ```bash
 git clone https://github.com/itoksk/youtube-transcribe-skill.git ~/git/youtube-transcribe-skill
 cd ~/git/youtube-transcribe-skill
+```
+
+### 2-B. ソースを取得（git が無い場合 / GitHub アカウント無し）
+
+```bash
+mkdir -p ~/git && cd ~/git
+curl -fsSL https://github.com/itoksk/youtube-transcribe-skill/archive/refs/heads/main.tar.gz \
+  | tar -xz
+mv youtube-transcribe-skill-main youtube-transcribe-skill
+cd youtube-transcribe-skill
 ```
 
 ### 3. インストーラを実行
@@ -53,7 +65,10 @@ bash install.sh
 ```
 
 これで `~/.claude/skills/youtube-transcribe/` にシンボリックリンクが作成されます。
-リポジトリ側を `git pull` すれば即時反映されます。
+
+更新方法:
+- git で取得した場合: `cd <リポジトリ> && git pull`（symlink なので即時反映）
+- tarball で取得した場合: 上のワンライナーを再実行
 
 ## アンインストール
 
