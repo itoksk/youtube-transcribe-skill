@@ -29,17 +29,63 @@ curl -fsSL https://raw.githubusercontent.com/itoksk/youtube-transcribe-skill/mai
 
 ### 1. 依存ツールを順にインストール
 
+**前提**: macOS（Apple Silicon）。`mlx-whisper` は MLX フレームワーク依存のため、Apple Silicon 専用です。
+
+#### Step 1-1: Homebrew
+
+未導入なら入れる（既に入っていればスキップ）:
+
 ```bash
-# Homebrew が未導入なら
+# 確認
+brew --version || true
+
+# 未導入なら（対話式・1〜3分）
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-# 必須パッケージ
+#### Step 1-2: yt-dlp / ffmpeg / pipx をまとめて
+
+```bash
 brew install yt-dlp ffmpeg pipx
-pipx ensurepath
+```
 
-# 新しいシェルを開き直してから:
+| パッケージ | 用途 |
+|---|---|
+| `yt-dlp` | YouTube から音声を抽出 |
+| `ffmpeg` | mp3 への変換 |
+| `pipx` | Python ツールを隔離した仮想環境にインストールするためのツール |
+
+#### Step 1-3: pipx の PATH を通す
+
+`pipx` は `~/.local/bin` にコマンドを置くため、初回だけ PATH に追加が必要:
+
+```bash
+pipx ensurepath
+```
+
+> ⚠️ **このあと必ずターミナルを再起動するか、PATH を反映してください**:
+>
+> ```bash
+> source ~/.zshrc        # zsh の場合
+> # source ~/.bashrc     # bash の場合
+> ```
+>
+> PATH を反映していないと、次の `pipx install` が走っても `which mlx_whisper` で見つかりません。
+
+#### Step 1-4: mlx-whisper をインストール
+
+```bash
 pipx install mlx-whisper
 ```
+
+#### Step 1-5: 動作確認
+
+```bash
+which mlx_whisper
+# → /Users/<you>/.local/bin/mlx_whisper が表示されれば OK
+```
+
+> 💡 **`pip install mlx-whisper` ではダメな理由**: Homebrew の Python は PEP 668 により "externally-managed-environment" になっていて、`pip install` を直接叩くとエラーになります。`pipx` は専用の仮想環境を作って隔離してくれるので、これが正解です。
 
 ### 2-A. ソースを取得（git がある場合）
 
