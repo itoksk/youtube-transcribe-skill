@@ -58,11 +58,26 @@ done
 
 [[ -z "$URL" ]] && { err "URL が必要です。"; usage 1; }
 
-# 依存チェック
-if ! bash "$SCRIPT_DIR/check_deps.sh" >/dev/null 2>&1; then
-  warn "依存ツールが不足しています。check_deps.sh を実行して確認してください。"
-  bash "$SCRIPT_DIR/check_deps.sh" || true
-  exit 1
+# pipx でインストールされたコマンドは ~/.local/bin にあるが、
+# ターミナルを再起動していないと PATH に入っていないことがあるので自己修正する。
+if [[ -d "$HOME/.local/bin" && ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# ランタイム時の依存チェックは「軽量・即時失敗・対処法を案内」だけ。
+# 重いフルチェックはインストール時に済ませる前提（check_deps.sh）。
+missing_runtime=()
+for cmd in yt-dlp ffmpeg mlx_whisper; do
+  command -v "$cmd" >/dev/null 2>&1 || missing_runtime+=("$cmd")
+done
+if [[ ${#missing_runtime[@]} -gt 0 ]]; then
+  err "依存コマンドが見つかりません: ${missing_runtime[*]}"
+  echo "" >&2
+  echo "次のいずれかで対処してください:" >&2
+  echo "  1) ターミナルを開き直す（pipx ensurepath 後で PATH 未反映の可能性）" >&2
+  echo "  2) 手元で確認: bash $SCRIPT_DIR/check_deps.sh" >&2
+  echo "  3) 自動修復: bash $SCRIPT_DIR/check_deps.sh --install" >&2
+  exit 127
 fi
 
 mkdir -p "$OUT_DIR"

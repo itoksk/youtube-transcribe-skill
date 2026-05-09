@@ -44,15 +44,10 @@ YouTube 動画の URL から、ローカルで完結する文字起こしパイ�
 
 ## ワークフロー
 
-### Step 0: 依存ツールの確認
-
-`scripts/check_deps.sh` を実行して、`yt-dlp` `ffmpeg` `pipx` `mlx_whisper` が揃っているか確認する。
-
-```bash
-bash <SKILL_DIR>/scripts/check_deps.sh
-```
-
-不足していれば、ユーザーに確認した上で `--install` で自動インストール、または該当コマンドを案内する。
+> **依存ツールについて**: `yt-dlp` / `ffmpeg` / `pipx` / `mlx_whisper` はスキルのインストール時に
+> `install.sh` がチェック＆自動インストール済みである前提。実行のたびに重い依存チェックはしない。
+> `transcribe.sh` 自身が軽量な `command -v` 確認をしてから走るので、もし見つからなければ
+> 「ターミナルを開き直すか `check_deps.sh` を実行してください」とユーザーに案内する。
 
 ### Step 1: 文字起こしパイプラインの実行
 

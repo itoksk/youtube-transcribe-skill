@@ -69,16 +69,54 @@ fi
 SKILL_SRC="$REPO_DIR/skills/$SKILL_NAME"
 [[ -d "$SKILL_SRC" ]] || { err "スキル本体が見つかりません: $SKILL_SRC"; exit 1; }
 
-# ----- 依存チェック / 任意でインストール -----
+# ----- 依存チェック / 不足あれば一緒にインストール -----
+# インストール時は「揃ってなければ一緒に入れる」を既定動作に。
+# 実行のたびに重いチェックは走らない（transcribe.sh は軽量チェックのみ）。
 info "依存ツールを確認します..."
-if ! bash "$SKILL_SRC/scripts/check_deps.sh"; then
+
+if bash "$SKILL_SRC/scripts/check_deps.sh"; then
+  ok "依存ツールはすべて揃っています。"
+else
   echo ""
   warn "依存ツールが不足しています。"
-  read -r -p "自動でインストールしますか？ [y/N]: " ANS
-  if [[ "${ANS:-N}" =~ ^[Yy] ]]; then
-    bash "$SKILL_SRC/scripts/check_deps.sh" --install
+  if [[ -t 0 ]]; then
+    # 対話可能 → 既定 Yes で確認
+    read -r -p "一緒にインストールしますか？ [Y/n]: " ANS
+    ANS="${ANS:-Y}"
   else
-    info "後で手動インストールできます: bash $SKILL_SRC/scripts/check_deps.sh"
+    # ワンライナー（パイプ経由）の場合は確認できないので既定で実行。
+    # スキップしたければ環境変数 SKIP_DEPS=1 を設定する。
+    if [[ "${SKIP_DEPS:-0}" == "1" ]]; then
+      ANS="N"
+      info "SKIP_DEPS=1 のため依存インストールをスキップします。"
+    else
+      ANS="Y"
+      info "非対話モード: 依存ツールを自動インストールします（SKIP_DEPS=1 でスキップ可能）。"
+    fi
+  fi
+
+  if [[ "$ANS" =~ ^[Yy] ]]; then
+    bash "$SKILL_SRC/scripts/check_deps.sh" --install || {
+      warn "自動インストールが完了しなかったか、PATH 反映が必要です。"
+      warn "ターミナルを再起動してから、もう一度このスクリプトを実行してください。"
+    }
+
+    # PATH を本セッションでも反映してから再検証（pipx ensurepath 直後対応）
+    if [[ -d "$HOME/.local/bin" && ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+      export PATH="$HOME/.local/bin:$PATH"
+    fi
+
+    echo ""
+    info "再検証..."
+    if ! bash "$SKILL_SRC/scripts/check_deps.sh"; then
+      warn "現セッションではまだ全部見えていない可能性があります。"
+      warn "新しいターミナルを開いてから check_deps.sh を再実行してください:"
+      echo "  bash $SKILL_SRC/scripts/check_deps.sh"
+    fi
+  else
+    info "後で手動インストールできます:"
+    echo "  bash $SKILL_SRC/scripts/check_deps.sh           # 案内表示"
+    echo "  bash $SKILL_SRC/scripts/check_deps.sh --install # 自動実行"
   fi
 fi
 
